@@ -1,9 +1,10 @@
 package com.cplauncher.items.matchers;
 
+import com.cplauncher.items.ActionItem;
 import com.cplauncher.items.DirectoryItem;
 import com.cplauncher.items.ResultItemsList;
-import com.cplauncher.utils.Utils;
 import com.cplauncher.platform.OsUtils;
+import com.cplauncher.utils.Utils;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -62,29 +63,30 @@ public class FilesItemMatcher extends AbstractItemMatcher
 
     private void createExecuteItems(DirectoryItem fileItem, ResultItemsList resultList)
     {
-        DirectoryItem executeItem = new DirectoryItem();
+        ActionItem executeItem = new ActionItem();
         executeItem.setText("Execute");
         executeItem.setId(fileItem.getId());
         executeItem.setPriority(10);
+        executeItem.setDefaultItem(true);
         executeItem.setItemData(fileItem.getItemData());
-        //executeItem.setExecutor((item) -> {
-        //    File fileToExecute = (File)item.getItemData();
-        //    System.out.println("Execute application " + fileToExecute.getAbsolutePath());
-        //    Utils.executeExternalApplication("open", fileToExecute.getAbsolutePath());
-        //});
+        executeItem.setExecutor((item) -> {
+            File fileToExecute = (File)item.getItemData();
+            System.out.println("Execute application " + fileToExecute.getAbsolutePath());
+            Utils.executeExternalApplication("open", fileToExecute.getAbsolutePath());
+        });
         resultList.addItem(executeItem, true);
 
-        DirectoryItem showFileItem = new DirectoryItem();
+        ActionItem showFileItem = new ActionItem();
         showFileItem.setText("Show file");
         showFileItem.setCompletion(showFileItem.getText().toLowerCase());
         showFileItem.setId(fileItem.getId());
         showFileItem.setItemData(fileItem.getItemData());
         showFileItem.setPriority(1);
-        //showFileItem.setExecutor((item) -> {
-        //    File fileToExecute = (File)item.getItemData();
-        //    System.out.println("Show file " + fileToExecute.getAbsolutePath());
-        //    OsUtils.get().openFileInFileManager(fileToExecute.getAbsolutePath());
-        //});
+        showFileItem.setExecutor((item) -> {
+            File fileToExecute = (File)item.getItemData();
+            System.out.println("Show file " + fileToExecute.getAbsolutePath());
+            OsUtils.get().openFileInFileManager(fileToExecute.getAbsolutePath());
+        });
         resultList.addItem(showFileItem, true);
     }
 

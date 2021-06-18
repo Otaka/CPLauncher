@@ -6,14 +6,14 @@ import java.util.List;
 public class ResultItemsList
 {
     private String textToMatch;
-    private List<DirectoryItem> items = new ArrayList<>(50);
+    private List<AbstractItem> items = new ArrayList<>(50);
 
     public ResultItemsList(String textToMatch)
     {
         this.textToMatch = textToMatch;
     }
 
-    public void addItem(DirectoryItem item, boolean applyFilter)
+    public void addItem(AbstractItem item, boolean applyFilter)
     {
         if (applyFilter)
         {
@@ -28,7 +28,7 @@ public class ResultItemsList
         }
     }
 
-    public List<DirectoryItem> getItems()
+    public List<AbstractItem> getItems()
     {
         return items;
     }

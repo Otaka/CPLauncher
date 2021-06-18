@@ -1,9 +1,11 @@
 package com.cplauncher.ui.inputselector;
 
 import com.cplauncher.items.AbstractItem;
+import com.cplauncher.items.ActionItem;
 import com.cplauncher.items.DirectoryItem;
 import com.cplauncher.items.ResultItemsList;
 import com.cplauncher.items.matchers.AbstractItemMatcher;
+import com.cplauncher.items.matchers.MatchersManager;
 import com.cplauncher.platform.OsUtils;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -13,9 +15,11 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -34,15 +38,17 @@ public class InputSelector extends JFrame
     private List<AbstractItemMatcher> activeMatchers = new ArrayList<>();
     private boolean enableDocumentListener = true;
     private List<DirectoryItem> stackedItems = new ArrayList<>();
+    private MatchersManager matchersManager;
 
-    public InputSelector() throws HeadlessException
+    public InputSelector(MatchersManager matchersManager) throws HeadlessException
     {
+        this.matchersManager = matchersManager;
         instance = this;
-        setUndecorated(true);
+        setUndecorated(false);
         setTitle("CPLauncher");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-       // getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-        getContentPane().setLayout(new VerticalLayoutFillWidth().setPadding(5,5));
+
+        getContentPane().setLayout(new VerticalLayoutFillWidth().setPadding(5, 5));
         stackedTermsHolderPanel = new JPanel();
         stackedTermsHolderPanel.setAlignmentX(JComponent.LEFT_ALIGNMENT);
         stackedTermsHolderPanel.setMinimumSize(new Dimension(0, 0));
@@ -84,7 +90,7 @@ public class InputSelector extends JFrame
         inputField.setForeground(Style.INSTANCE.inputFieldTextColor);
         inputField.setCaretColor(Color.WHITE);
         inputField.setFocusTraversalKeysEnabled(false);
-        inputField.setPreferredSize(new Dimension(400, 40));
+        inputField.setPreferredSize(new Dimension(500, 40));
         inputField.setFont(inputField.getFont().deriveFont(20.f));
         inputField.addKeyListener(new KeyAdapter()
         {
@@ -93,11 +99,11 @@ public class InputSelector extends JFrame
             {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER)
                 {
-                    System.out.println("Accept. Not implemented yet");
+                    activate(false);
                 }
                 if (e.getKeyCode() == KeyEvent.VK_TAB)
                 {
-                    System.out.println("Expand. Not implemented yet");
+                    activate(true);
                 }
                 else if (e.getKeyCode() == KeyEvent.VK_DOWN)
                 {
@@ -135,11 +141,91 @@ public class InputSelector extends JFrame
         return inputField;
     }
 
+    private void activate(boolean forceList)
+    {
+        if (itemsListPanel.getSelected() == -1)
+        {
+            return;
+        }
+
+        AbstractItem itemToExecute = itemsListPanel.getSelectedItem();
+
+        if (itemToExecute instanceof ActionItem)
+        {
+            if(forceList){
+                return;// do nothing if it is action item
+            }
+
+            setActionItems(Collections.emptyList());
+            setText("", false);
+            executeItem((ActionItem)itemToExecute);
+            return;
+        }
+
+        DirectoryItem parentItem = (DirectoryItem)itemToExecute;
+        stackedItems.add(parentItem);
+
+        setActiveMatchers(matchersManager.getMatchersByTags(parentItem.getTags()));
+        List<AbstractItem> items = matchItems("", getActiveMatchers());
+        ActionItem executeItemCandidate = getExecuteCandidate(parentItem, items);
+        if (forceList || executeItemCandidate == null)
+        {
+            setResultItemsToList(items);
+        }
+        else
+        {
+            executeItem(executeItemCandidate);
+            stackedItems.clear();
+            setActiveMatchers(matchersManager.getMatchersByTags(parentItem.getTags()));
+            setResultItemsToList(Collections.emptyList());
+        }
+
+        setText("", true);
+    }
+
+    private ActionItem getExecuteCandidate(DirectoryItem parentItem, List<AbstractItem> items)
+    {
+        List<ActionItem> candidates = searchBestItemToExecute(items);
+        if (candidates.size() != 1)
+        {
+            return null;
+        }
+        return candidates.get(0);
+    }
+
+    private List<ActionItem> searchBestItemToExecute(List<AbstractItem> items)
+    {
+        List<ActionItem> result = items.stream()
+                .filter(item -> item instanceof ActionItem)
+                .map(item -> (ActionItem)item)
+                .filter(ActionItem::isDefaultItem)
+                .sorted(Comparator.comparingInt(ActionItem::getPriority).reversed())
+                .collect(Collectors.toList());
+
+        if (result.isEmpty())
+        {
+            return Collections.EMPTY_LIST;
+        }
+
+        int priority = result.get(0).getPriority();
+        return result.stream()
+                .filter(i -> i.getPriority() == priority)
+                .collect(Collectors.toList());
+    }
+
+    private void executeItem(ActionItem item)
+    {
+        hideDialog();
+        SwingUtilities.invokeLater(() -> {
+            item.getExecutor().execute(item);
+        });
+    }
+
     private void onTextTyped(String text)
     {
         if (enableDocumentListener)
         {
-            List<DirectoryItem> result = matchItems(text, getActiveMatchers());
+            List<AbstractItem> result = matchItems(text, getActiveMatchers());
             setResultItemsToList(result);
         }
     }
@@ -149,7 +235,12 @@ public class InputSelector extends JFrame
         return activeMatchers;
     }
 
-    private void setResultItemsToList(List<DirectoryItem> result)
+    public void setActiveMatchers(List<AbstractItemMatcher> activeMatchers)
+    {
+        this.activeMatchers = activeMatchers;
+    }
+
+    private void setResultItemsToList(List<AbstractItem> result)
     {
         setActionItems(result);
     }
@@ -157,19 +248,19 @@ public class InputSelector extends JFrame
     public void setActionItems(List<? extends AbstractItem> items)
     {
         int actionItemsListPanelHeightBefore = itemsListPanel.getVisibleElementsCount() * itemsListPanel.getElementHeight();
-        itemsListPanel.setActionItems(items);
+        itemsListPanel.setItems(items);
         int actionItemsListPanelHeightAfter = itemsListPanel.getVisibleElementsCount() * itemsListPanel.getElementHeight();
         int totalHeightClientHeight = inputField.getHeight() + actionItemsListPanelHeightAfter;
-        int totalHeight=totalHeightClientHeight+getInsets().top+getInsets().bottom;
+        int totalHeight = totalHeightClientHeight + getInsets().top + getInsets().bottom;
         System.out.println(
                 "totalH=" + totalHeight + " inputFieldH=" + inputField.getHeight() + " itemsCount=" + itemsListPanel.getVisibleElementsCount() + " itemsListPanelHBef="
                         + actionItemsListPanelHeightBefore
                         + " after=" + actionItemsListPanelHeightAfter + " elHeight=" + itemsListPanel.getElementHeight());
-        setSize(getWidth(), totalHeight);
-
+        //setSize(getWidth(), totalHeight);
+        pack();
     }
 
-    private List<DirectoryItem> matchItems(String text, List<AbstractItemMatcher> activeMatchers)
+    private List<AbstractItem> matchItems(String text, List<AbstractItemMatcher> activeMatchers)
     {
         text = StringUtils.stripStart(text, " \t").toLowerCase();
 
@@ -179,12 +270,12 @@ public class InputSelector extends JFrame
             matcher.match(getLastStackedItem(), text, result);
         }
 
-        List<DirectoryItem> matchedItemsList = result.getItems();
+        List<AbstractItem> matchedItemsList = result.getItems();
         sortItemsList(matchedItemsList, text);
         return matchedItemsList;
     }
 
-    private void sortItemsList(List<DirectoryItem> items, String text)
+    private void sortItemsList(List<AbstractItem> items, String text)
     {
         items.sort((o1, o2) -> {
             int d1 = StringUtils.getLevenshteinDistance(o1.getText(), text);
@@ -226,6 +317,16 @@ public class InputSelector extends JFrame
             System.out.println("Bring InputSelector to front");
             OsUtils.get().bringToFront(this);
         });
+    }
+
+    public void setText(String text, boolean disableMatching)
+    {
+        if (disableMatching)
+        {
+            enableDocumentListener = false;
+        }
+        inputField.setText(text);
+        enableDocumentListener = true;
     }
 
     public void setMatcher(AbstractItemMatcher matcher)

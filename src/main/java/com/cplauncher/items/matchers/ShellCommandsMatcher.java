@@ -1,5 +1,6 @@
 package com.cplauncher.items.matchers;
 
+import com.cplauncher.items.ActionItem;
 import com.cplauncher.items.DirectoryItem;
 import com.cplauncher.items.ResultItemsList;
 import com.cplauncher.platform.OsUtils;
@@ -39,7 +40,7 @@ public class ShellCommandsMatcher extends AbstractItemMatcher
                 {
                     textToOutput = "";
                 }
-                DirectoryItem shellItem = createShellItem(textToOutput);
+                ActionItem shellItem = createShellItem(textToOutput);
                 resultList.addItem(shellItem, false);
             }
         }
@@ -49,18 +50,18 @@ public class ShellCommandsMatcher extends AbstractItemMatcher
         }
     }
 
-    private DirectoryItem createShellItem(String textToOutput)
+    private ActionItem createShellItem(String textToOutput)
     {
-        DirectoryItem shellItem = new DirectoryItem();
+        ActionItem shellItem = new ActionItem();
         shellItem.setTags(tags);
         shellItem.setPriority(1);
         shellItem.setCompletion("echo shell");
         shellItem.setText("Echo in Shell text [" + textToOutput + "]");
         shellItem.setItemData(textToOutput);
-       // shellItem.setExecutor((item) -> {
-       //     String escapedCommand = StringEscapeUtils.escapeJava("echo \"" + (String)item.getItemData() + "\"");
-       //     OsUtils.get().executeShellCommand(escapedCommand);
-       // });
+        shellItem.setExecutor((item) -> {
+            String escapedCommand = StringEscapeUtils.escapeJava("echo \"" + (String)item.getItemData() + "\"");
+            OsUtils.get().executeShellCommand(escapedCommand);
+        });
         return shellItem;
     }
 }

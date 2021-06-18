@@ -1,6 +1,5 @@
 package com.cplauncher;
 
-import com.cplauncher.hotkey.HotKeyEditor;
 import com.cplauncher.hotkey.Hotkey;
 import com.cplauncher.hotkey.HotkeyManager;
 import com.cplauncher.items.matchers.MatchersManager;
@@ -8,7 +7,6 @@ import com.cplauncher.ui.inputselector.InputSelector;
 import com.tulskiy.keymaster.common.HotKey;
 import com.tulskiy.keymaster.common.HotKeyListener;
 import java.awt.AWTException;
-import java.awt.FlowLayout;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
@@ -17,12 +15,11 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
 
 public class Main
 {
-    private InputSelector inputSelectorDialog = new InputSelector();
-    private MatchersManager matchersManager = new MatchersManager();
+    private MatchersManager matchersManager;
+    private InputSelector inputSelectorDialog;
 
     public static void main(String[] args) throws IOException, AWTException
     {
@@ -34,6 +31,8 @@ public class Main
     private void main() throws IOException, AWTException
     {
         System.out.println("Started CPLauncher");
+        matchersManager = new MatchersManager();
+        inputSelectorDialog = new InputSelector(matchersManager);
         createTray();
         matchersManager.initMatchers();
         registerShowLauncherHotkey();

@@ -1,5 +1,6 @@
 package com.cplauncher.ui.inputselector;
 
+import com.cplauncher.items.AbstractItem;
 import com.cplauncher.items.matchers.AbstractItemMatcher;
 import com.cplauncher.items.matchers.BookmarksItemMatcher;
 import com.cplauncher.items.matchers.FilesItemMatcher;
@@ -298,9 +299,10 @@ public class InputSelectorDialogOld extends JFrame
             matcher.match(getLastSelectedItem(), text, result);
         }
 
-        List<DirectoryItem> matchedItemsList = result.getItems();
-        sortItemsList(matchedItemsList, text);
-        return matchedItemsList;
+        List<AbstractItem> matchedItemsList = result.getItems();
+        //sortItemsList(matchedItemsList, text);
+        //return matchedItemsList;
+        return null;
     }
 
     private void sortItemsList(List<DirectoryItem> items, String text)

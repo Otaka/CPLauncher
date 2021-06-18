@@ -1,5 +1,6 @@
 package com.cplauncher.items.matchers;
 
+import com.cplauncher.items.ActionItem;
 import com.cplauncher.items.DirectoryItem;
 import com.cplauncher.items.ResultItemsList;
 import com.cplauncher.utils.Utils;
@@ -52,26 +53,23 @@ public class BookmarksItemMatcher extends AbstractItemMatcher
                 bookmarkItem.setSubtext(bookmark.bookmarkText);
                 bookmarkItem.setTags(defaultUrlTags);
                 bookmarkItem.setItemData(bookmark.url);
-                //bookmarkItem.setExecutor((item) -> {
-                //    String url = (String)item.getItemData();
-                //    Utils.executeExternalApplication("open", url);
-                //});
                 resultList.addItem(bookmarkItem, false);
             }
         }
     }
 
-    private DirectoryItem createOpenUrlItem(String url)
+    private ActionItem createOpenUrlItem(String url)
     {
-        DirectoryItem openUrlItem = new DirectoryItem();
+        ActionItem openUrlItem = new ActionItem();
 
         openUrlItem.setId("open url:" + url);
+        openUrlItem.setDefaultItem(true);
         openUrlItem.setText("Open in default browser");
         openUrlItem.setItemData(url);
-        //openUrlItem.setExecutor((item) -> {
-        //    String _url = (String)item.getItemData();
-        //    Utils.executeExternalApplication("open", _url);
-        //});
+        openUrlItem.setExecutor((item) -> {
+            String _url = (String)item.getItemData();
+            Utils.executeExternalApplication("open", _url);
+        });
         return openUrlItem;
     }
 

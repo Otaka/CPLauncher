@@ -8,7 +8,7 @@ import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-public class ActionItemComponent extends JPanel
+public class ItemOptionComponent extends JPanel
 {
     private static Font textFont;
     private static Font subtextFont;
@@ -19,7 +19,7 @@ public class ActionItemComponent extends JPanel
     private static int cachedHeight = 0;
     private static BufferedImage tempCanvas = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
 
-    public ActionItemComponent()
+    public ItemOptionComponent()
     {
         setLayout(new VerticalLayoutFillWidth().setPadding(50, 0));
         textLabel = new JLabel();

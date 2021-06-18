@@ -12,12 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import javax.swing.JPanel;
+import org.apache.commons.lang3.StringUtils;
 
 public class ItemsListPanel extends JPanel
 {
     private final static int MAX_ITEMS_TO_SHOW = 9;
-    private Queue<ActionItemComponent> actionItemComponentsPool;
-    private List<AbstractItem> actionItems = new ArrayList<>();
+    private Queue<ItemOptionComponent> itemOptionComponentsPool;
+    private List<AbstractItem> items = new ArrayList<>();
     private int selectedItemIndex = 0;
     private int topComponent = 0;
     private int visibleElementsCount = 0;
@@ -29,7 +30,7 @@ public class ItemsListPanel extends JPanel
         setLayout(new VerticalLayoutFillWidth().setPadding(0, 5));
         setOpaque(false);
 
-        initActionItemsComponentsPool();
+        initItemOptionsComponentsPool();
 
         elementHeight = 0;
         addMouseMotionListener(new MouseMotionAdapter()
@@ -87,22 +88,22 @@ public class ItemsListPanel extends JPanel
         return elementHeight;
     }
 
-    private void initActionItemsComponentsPool()
+    private void initItemOptionsComponentsPool()
     {
-        actionItemComponentsPool = new ArrayDeque<>(9);
+        itemOptionComponentsPool = new ArrayDeque<>(9);
         for (int i = 0; i < MAX_ITEMS_TO_SHOW; i++)
         {
-            actionItemComponentsPool.add(new ActionItemComponent());
+            itemOptionComponentsPool.add(new ItemOptionComponent());
         }
     }
 
     private void onMouseMoved(int x, int y)
     {
-        int selectedVisibleItem = y / ActionItemComponent.getComponentHeight();
+        int selectedVisibleItem = y / ItemOptionComponent.getComponentHeight();
         if (getSelected() != topComponent + selectedVisibleItem)
         {
             setSelected(topComponent + selectedVisibleItem);
-            refreshActionComponents();
+            refreshItemOptionsComponents();
         }
     }
 
@@ -113,7 +114,7 @@ public class ItemsListPanel extends JPanel
             return;
         }
 
-        if (actionItems.isEmpty())
+        if (items.isEmpty())
         {
             selectedItemIndex = -1;
         }
@@ -122,9 +123,9 @@ public class ItemsListPanel extends JPanel
         {
             selectedItemIndex = 0;
         }
-        if (selectedItemIndex >= actionItems.size())
+        if (selectedItemIndex >= items.size())
         {
-            selectedItemIndex = actionItems.size() - 1;
+            selectedItemIndex = items.size() - 1;
         }
         if (selectedItemIndex < topComponent)
         {
@@ -143,16 +144,16 @@ public class ItemsListPanel extends JPanel
 
     public AbstractItem getSelectedItem()
     {
-        if (actionItems.isEmpty() || selectedItemIndex == -1)
+        if (items.isEmpty() || selectedItemIndex == -1)
         {
             return null;
         }
-        return actionItems.get(selectedItemIndex);
+        return items.get(selectedItemIndex);
     }
 
     public void selectNext(boolean wrapAround)
     {
-        if (wrapAround && getSelected() == actionItems.size() - 1)
+        if (wrapAround && getSelected() == items.size() - 1)
         {
             setSelected(0);
         }
@@ -160,29 +161,29 @@ public class ItemsListPanel extends JPanel
         {
             setSelected(getSelected() + 1);
         }
-        refreshActionComponents();
+        refreshItemOptionsComponents();
     }
 
     public void selectPrevious(boolean wrapAround)
     {
         if (wrapAround && getSelected() == 0)
         {
-            setSelected(actionItems.size() - 1);
+            setSelected(items.size() - 1);
         }
         else
         {
             setSelected(getSelected() - 1);
         }
-        refreshActionComponents();
+        refreshItemOptionsComponents();
     }
 
-    public void setActionItems(List<? extends AbstractItem> items)
+    public void setItems(List<? extends AbstractItem> items)
     {
-        actionItems.clear();
-        actionItems.addAll(items);
+        this.items.clear();
+        this.items.addAll(items);
         selectedItemIndex = (items.size() > 0) ? 0 : -1;
         topComponent = 0;
-        refreshActionComponents();
+        refreshItemOptionsComponents();
         if (items.size() > 0)
         {
             elementHeight = getComponent(0).getHeight();
@@ -193,27 +194,27 @@ public class ItemsListPanel extends JPanel
         }
     }
 
-    private ActionItemComponent getActionItemComponentFromPool()
+    private ItemOptionComponent getItemOptionComponentFromPool()
     {
-        ActionItemComponent actionItemComponent = actionItemComponentsPool.poll();
-        return actionItemComponent;
+        ItemOptionComponent itemOptionComponent = itemOptionComponentsPool.poll();
+        return itemOptionComponent;
     }
 
-    private void returnActionItemComponentToPool(ActionItemComponent actionItemComponent)
+    private void returnItemOptionComponentToPool(ItemOptionComponent itemOptionComponent)
     {
-        actionItemComponentsPool.add(actionItemComponent);
+        itemOptionComponentsPool.add(itemOptionComponent);
     }
 
-    private void refreshActionComponents()
+    private void refreshItemOptionsComponents()
     {
         removeActionItemsComponentsFromWindow();
-        visibleElementsCount = Math.min(MAX_ITEMS_TO_SHOW, actionItems.size());
+        visibleElementsCount = Math.min(MAX_ITEMS_TO_SHOW, items.size());
         for (int i = 0; i < visibleElementsCount; i++)
         {
-            AbstractItem item = actionItems.get(i + topComponent);
-            ActionItemComponent actionItemComponent = getActionItemComponentFromPool();
-            beforeUpdateItemToPanel(actionItemComponent, item, topComponent + i);
-            add(actionItemComponent);
+            AbstractItem item = items.get(i + topComponent);
+            ItemOptionComponent itemOptionComponent = getItemOptionComponentFromPool();
+            updateItemOptionComponent(itemOptionComponent, item, topComponent + i);
+            add(itemOptionComponent);
         }
 
         validate();
@@ -231,23 +232,23 @@ public class ItemsListPanel extends JPanel
         //reset components and return them to pool
         for (Component component : getComponents())
         {
-            ActionItemComponent actionItemComponent = (ActionItemComponent)component;
-            actionItemComponent.reset();
-            returnActionItemComponentToPool(actionItemComponent);
+            ItemOptionComponent itemOptionComponent = (ItemOptionComponent)component;
+            itemOptionComponent.reset();
+            returnItemOptionComponentToPool(itemOptionComponent);
         }
         removeAll();
     }
 
-    private void beforeUpdateItemToPanel(ActionItemComponent itemComponent, AbstractItem item, int index)
+    private void updateItemOptionComponent(ItemOptionComponent itemComponent, AbstractItem item, int index)
     {
         itemComponent.setIcon(item.getIcon());
-        itemComponent.setSubtext(item.getSubtext());
+        itemComponent.setSubtext(StringUtils.isEmpty(item.getSubtext()) ? " " : item.getSubtext());
         itemComponent.setText(item.getText());
         itemComponent.setSelected(index == selectedItemIndex);
     }
 
-    public List<AbstractItem> getActionItems()
+    public List<AbstractItem> getItems()
     {
-        return actionItems;
+        return items;
     }
 }
